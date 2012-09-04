@@ -1,0 +1,35 @@
+#!/bin/sh
+
+../qt-everywhere-opensource-src-4.7.4/configure \
+    -opensource \
+    -confirm-license \
+    -qconfig genode \
+    -xplatform qws/genode-x86-g++ \
+    -embedded x86 \
+    -static \
+    -no-separate-debug-info \
+    -depths 8,16,32 \
+    -no-qt3support \
+    -no-accessibility \
+    -no-phonon \
+    -no-libtiff \
+    -no-libmng \
+    -no-openssl \
+    -no-nis \
+    -no-cups \
+    -no-iconv \
+    -no-dbus \
+    -no-freetype \
+    -no-largefile \
+    -no-gfx-linuxfb \
+    -no-gfx-multiscreen \
+    -qt-gfx-nitpicker \
+    -no-mouse-linuxtp \
+    -no-mouse-pc \
+    -qt-mouse-nitpicker \
+    -no-kbd-tty \
+    -qt-kbd-nitpicker \
+    -make tools \
+    -nomake examples \
+    -nomake demos \
+    -fast
