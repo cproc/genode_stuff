@@ -1,0 +1,22 @@
+Show shared library load addresses
+
+From: Christian Prochaska <christian.prochaska@genode-labs.com>
+
+# Parent 010c0feda52d12d4a5f9f7afe060dad354c1c4cb
+---
+ os/src/lib/ldso/contrib/rtld.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/os/src/lib/ldso/contrib/rtld.c b/os/src/lib/ldso/contrib/rtld.c
+index f72c778..33bc0c2 100644
+--- a/os/src/lib/ldso/contrib/rtld.c
++++ b/os/src/lib/ldso/contrib/rtld.c
+@@ -1454,7 +1454,7 @@ do_load_object(int fd, const char *name, char *path, struct stat *sbp)
+     obj_loads++;
+     linkmap_add(obj);	/* for GDB & dlinfo() */
+ 
+-    dbg("  %p .. %p: %s", obj->mapbase,
++    printf("  %p .. %p: %s\n", obj->mapbase,
+          obj->mapbase + obj->mapsize - 1, obj->path);
+     if (obj->textrel)
+ 	dbg("  WARNING: %s has impure text", obj->path);

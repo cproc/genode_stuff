@@ -1,0 +1,121 @@
+cap_map_debug.diff
+
+From: Christian Prochaska <christian.prochaska@genode-labs.com>
+
+
+---
+ base-foc/src/base/env/cap_map.cc        |   35 +++++++++++++++++++++++++++++++
+ base-foc/src/base/env/cap_map_remove.cc |   10 +++++++++
+ 2 files changed, 45 insertions(+)
+
+diff --git a/base-foc/src/base/env/cap_map.cc b/base-foc/src/base/env/cap_map.cc
+index 6c509df..806e7d7 100644
+--- a/base-foc/src/base/env/cap_map.cc
++++ b/base-foc/src/base/env/cap_map.cc
+@@ -15,6 +15,7 @@
+ 
+ #include <base/cap_map.h>
+ #include <base/native_types.h>
++#include <base/snprintf.h>
+ 
+ #include <util/assert.h>
+ 
+@@ -24,8 +25,22 @@
+ namespace Fiasco {
+ #include <l4/sys/consts.h>
+ #include <l4/sys/task.h>
++#include <l4/sys/kdebug.h>
+ }
+ 
++unsigned int gettid()
++{
++	unsigned int tid = 0;
++	if (Genode::Thread_base::myself()) {
++		tid = (unsigned int)&tid;
++		tid >>= 20;
++		tid &= ~0x400;
++		tid++;
++	}
++	return tid;
++}
++
++static int counts[256];
+ 
+ /***********************
+  **  Cap_index class  **
+@@ -100,10 +115,16 @@ Genode::Cap_index* Genode::Capability_map::insert(int id)
+ 	       "Double insertion in cap_map()!");
+ 
+ 	Cap_index *i = cap_idx_alloc()->alloc_range(1);
++
++	char buf[128];
++	snprintf(buf, sizeof(buf), "%u: insert(id): count = %d, i = %p\n", gettid(), counts[gettid()]++, i);
++	Fiasco::outstring(buf);
++
+ 	if (i) {
+ 		i->id(id);
+ 		_tree.insert(i);
+ 	}
++
+ 	return i;
+ }
+ 
+@@ -120,10 +141,16 @@ Genode::Cap_index* Genode::Capability_map::insert(int id, addr_t kcap)
+ 		_tree.remove(i);
+ 
+ 	i = cap_idx_alloc()->alloc(kcap);
++
++	char buf[128];
++	snprintf(buf, sizeof(buf), "%u: insert(id,kcap): count = %d, i = %p\n", gettid(), counts[gettid()]++, i);
++	Fiasco::outstring(buf);
++
+ 	if (i) {
+ 		i->id(id);
+ 		_tree.insert(i);
+ 	}
++
+ 	return i;
+ }
+ 
+@@ -159,6 +186,14 @@ Genode::Cap_index* Genode::Capability_map::insert_map(int id, addr_t kcap)
+ 
+ 	/* the capability doesn't exists in the map so allocate a new one */
+ 	i = cap_idx_alloc()->alloc_range(1);
++
++	char buf[128];
++	snprintf(buf, sizeof(buf), "%u: insert_map: count = %d, i = %p\n", gettid(), counts[gettid()]++, i);
++	Fiasco::outstring(buf);
++	//if ((gettid() == 5) && (counts[gettid()] >= 13)) {
++	//	ASSERT(0, "trigger");
++	//}
++
+ 	if (!i)
+ 		return 0;
+ 
+diff --git a/base-foc/src/base/env/cap_map_remove.cc b/base-foc/src/base/env/cap_map_remove.cc
+index 6886a2d..11c7022 100644
+--- a/base-foc/src/base/env/cap_map_remove.cc
++++ b/base-foc/src/base/env/cap_map_remove.cc
+@@ -14,12 +14,22 @@
+  */
+ 
+ #include <base/cap_map.h>
++#include <base/snprintf.h>
+ 
++namespace Fiasco {
++#include <l4/sys/kdebug.h>
++#include <l4/sys/debugger.h>
++}
++extern unsigned int gettid();
+ void Genode::Capability_map::remove(Genode::Cap_index* i)
+ {
+ 	using namespace Genode;
++	using namespace Fiasco;
+ 
+ 	Lock_guard<Spin_lock> guard(_lock);
++	char buf[128];
++	snprintf(buf, sizeof(buf), "%lx %u: remove: i = %p\n", l4_debugger_global_id(L4_BASE_TASK_CAP),  gettid(), i);
++	Fiasco::outstring(buf);
+ 
+ 	if (i) {
+ 		Cap_index* e = _tree.first() ? _tree.first()->find_by_id(i->id()) : 0;

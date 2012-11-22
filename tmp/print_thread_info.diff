@@ -1,0 +1,57 @@
+print_thread_info.diff
+
+From: Christian Prochaska <christian.prochaska@genode-labs.com>
+
+
+---
+ base-linux/src/base/thread/thread_linux.cc |    4 ++++
+ base/include/base/thread.h                 |    5 +++++
+ base/src/base/thread/thread_start.cc       |    3 +++
+ 3 files changed, 12 insertions(+), 0 deletions(-)
+
+diff --git a/base-linux/src/base/thread/thread_linux.cc b/base-linux/src/base/thread/thread_linux.cc
+index 7a7e643..73f7852 100644
+--- a/base-linux/src/base/thread/thread_linux.cc
++++ b/base-linux/src/base/thread/thread_linux.cc
+@@ -40,6 +40,10 @@ static void thread_start(void *)
+ 	 */
+ 	lx_sigaction(LX_SIGUSR1, empty_signal_handler);
+ 
++char name_buf[16];
++Genode::Thread_base::myself()->name(name_buf, sizeof(name_buf));
++PDBG("name = %s, stack_base = %p", name_buf, Genode::Thread_base::myself()->stack_base());
++
+ 	Thread_base::myself()->entry();
+ 	sleep_forever();
+ }
+diff --git a/base/include/base/thread.h b/base/include/base/thread.h
+index b0a75c9..3f8a66a 100644
+--- a/base/include/base/thread.h
++++ b/base/include/base/thread.h
+@@ -335,6 +335,11 @@ namespace Genode {
+ 			void *stack_top() { return &_context->stack[-1]; }
+ 
+ 			/**
++			 * Return base of stack
++			 */
++			void *stack_base() { return (void*)_context->stack_base; }
++
++			/**
+ 			 * Return 'Thread_base' object corresponding to the calling thread
+ 			 *
+ 			 * \return  pointer to 'Thread_base' object, or
+diff --git a/base/src/base/thread/thread_start.cc b/base/src/base/thread/thread_start.cc
+index bd53d4b..7efb0bc 100644
+--- a/base/src/base/thread/thread_start.cc
++++ b/base/src/base/thread/thread_start.cc
+@@ -25,7 +25,10 @@ using namespace Genode;
+  */
+ void Thread_base::_thread_start()
+ {
++	char buf[48];
++	Thread_base::myself()->name(buf, sizeof(buf));
+ 	Thread_base::myself()->_thread_bootstrap();
++	PDBG("name = %s, stack_base = %p", buf, Thread_base::myself()->stack_base());
+ 	Thread_base::myself()->entry();
+ 	Genode::sleep_forever();
+ }

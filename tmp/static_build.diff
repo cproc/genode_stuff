@@ -1,0 +1,84 @@
+static_build.diff
+
+From: Christian Prochaska <christian.prochaska@genode-labs.com>
+
+
+---
+ base/mk/dep_lib.mk     |    8 +++++++-
+ base/mk/lib.mk         |    6 ++++++
+ tool/builddir/build.mk |    4 ++++
+ 3 files changed, 17 insertions(+), 1 deletions(-)
+
+diff --git a/base/mk/dep_lib.mk b/base/mk/dep_lib.mk
+index e903530..bbbf648 100644
+--- a/base/mk/dep_lib.mk
++++ b/base/mk/dep_lib.mk
+@@ -76,6 +76,7 @@ include $(BASE_DIR)/mk/base-libs.mk
+ # For shared libraries, we have to make sure to build ldso support before
+ # building a shared library.
+ #
++ifndef STATIC_BUILD
+ ifdef SHARED_LIB
+ LIBS += ldso-startup
+ 
+@@ -91,6 +92,10 @@ DEP_VAR_NAME := DEP_$(LIB).lib.so
+ else
+ DEP_VAR_NAME := DEP_$(LIB).lib
+ endif
++else
++# STATIC_BUILD
++DEP_VAR_NAME := DEP_$(LIB).lib
++endif
+ 
+ #
+ # Add platform preparation dependency
+@@ -144,8 +149,9 @@ endif
+ 	  echo "") >> $(LIB_DEP_FILE)
+ 	@for i in $(LIBS_TO_VISIT); do \
+ 	  $(MAKE) $(VERBOSE_DIR) -f $(BASE_DIR)/mk/dep_lib.mk REP_DIR=$(REP_DIR) LIB=$$i; done
++ifndef STATIC_BUILD
+ ifdef SHARED_LIB
+ 	@(echo "SHARED_LIBS += $(LIB)"; \
+ 	  echo "") >> $(LIB_DEP_FILE)
+ endif
+-
++endif
+diff --git a/base/mk/lib.mk b/base/mk/lib.mk
+index bbcd34b..db0bf06 100644
+--- a/base/mk/lib.mk
++++ b/base/mk/lib.mk
+@@ -64,6 +64,7 @@ include $(BASE_DIR)/mk/global.mk
+ #
+ # Name of <libname>.lib.a or <libname>.lib.so file to create
+ #
++ifndef STATIC_BUILD
+ ifndef SHARED_LIB
+ LIB_A        := $(addsuffix .lib.a,$(LIB))
+ LIB_FILENAME := $(LIB_A)
+@@ -72,6 +73,11 @@ LIB_SO       := $(addsuffix .lib.so,$(LIB))
+ INSTALL_SO   := $(INSTALL_DIR)/$(LIB_SO)
+ LIB_FILENAME := $(LIB_SO)
+ endif
++else
++# STATIC_BUILD
++LIB_A        := $(addsuffix .lib.a,$(LIB))
++LIB_FILENAME := $(LIB_A)
++endif
+ LIB_TAG := $(addsuffix .lib.tag,$(LIB))
+ 
+ #
+diff --git a/tool/builddir/build.mk b/tool/builddir/build.mk
+index 7c66837..efe8d42 100644
+--- a/tool/builddir/build.mk
++++ b/tool/builddir/build.mk
+@@ -60,6 +60,10 @@ export ECHO             ?= echo -e
+ REPOSITORIES := $(realpath $(shell echo $(REPOSITORIES)))
+ BASE_DIR     := $(realpath $(shell echo $(BASE_DIR)))
+ 
++ifdef STATIC_BUILD
++export STATIC_BUILD
++endif
++
+ #
+ # Configure shell program before executing any shell commands. On Ubuntu the
+ # standard shell is dash, which breaks colored output via its built-in echo

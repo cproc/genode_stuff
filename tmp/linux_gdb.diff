@@ -1,0 +1,22 @@
+linux_gdb.diff
+
+From: Christian Prochaska <christian.prochaska@genode-labs.com>
+
+
+---
+ base-linux/src/base/env/rm_session_mmap.cc |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/base-linux/src/base/env/rm_session_mmap.cc b/base-linux/src/base/env/rm_session_mmap.cc
+index 83d1215..aeaf3f3 100644
+--- a/base-linux/src/base/env/rm_session_mmap.cc
++++ b/base-linux/src/base/env/rm_session_mmap.cc
+@@ -49,7 +49,7 @@ static void *map_local(Dataspace_capability ds, Genode::size_t size,
+ 	Linux_dataspace::Filename fname = Linux_dataspace_client(ds).fname();
+ 	fname.buf[sizeof(fname.buf) - 1] = 0;
+ 
+-	bool writable = Dataspace_client(ds).writable();
++	bool writable = /*Dataspace_client(ds).writable()*/true;
+ 	int fd = lx_open(fname.buf, (writable ? O_RDWR : O_RDONLY) | LX_O_CLOEXEC);
+ 	if (fd < 0) {
+ 		PERR("map_local: Could not open file \"%s\"", fname.buf);

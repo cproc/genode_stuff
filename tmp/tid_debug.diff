@@ -1,0 +1,145 @@
+tid_debug.diff
+
+From: Christian Prochaska <christian.prochaska@genode-labs.com>
+
+
+---
+ base-codezero/src/platform/_main_helper.h  |    5 +++++
+ base-fiasco/src/base/lock/lock.cc          |    6 ++++++
+ base-foc/src/platform/_main_helper.h       |    4 ++++
+ base-linux/src/base/lock/lock_helper.h     |    5 +++++
+ base-nova/src/platform/_main_helper.h      |    5 +++++
+ base-okl4/src/platform/_main_helper.h      |    5 +++++
+ base-pistachio/src/platform/_main_helper.h |    8 ++++++++
+ base/src/base/console/log_console.cc       |    4 ++++
+ 8 files changed, 42 insertions(+), 0 deletions(-)
+
+diff --git a/base-codezero/src/platform/_main_helper.h b/base-codezero/src/platform/_main_helper.h
+index 73b964b..6c93849 100644
+--- a/base-codezero/src/platform/_main_helper.h
++++ b/base-codezero/src/platform/_main_helper.h
+@@ -64,4 +64,9 @@ static void main_thread_bootstrap()
+ 	Codezero::__l4_init();
+ }
+ 
++int genode_gettid()
++{
++	return -1;
++}
++
+ #endif /* _PLATFORM___MAIN_HELPER_H_ */
+diff --git a/base-fiasco/src/base/lock/lock.cc b/base-fiasco/src/base/lock/lock.cc
+index 626736e..790a0c9 100644
+--- a/base-fiasco/src/base/lock/lock.cc
++++ b/base-fiasco/src/base/lock/lock.cc
+@@ -48,3 +48,9 @@ void Cancelable_lock::unlock()
+ {
+ 	_native_lock = UNLOCKED;
+ }
++
++int genode_gettid()
++{
++	Fiasco::l4_threadid_t tid = Fiasco::l4_myself();
++	return (tid.id.task * 100 + tid.id.lthread);
++}
+diff --git a/base-foc/src/platform/_main_helper.h b/base-foc/src/platform/_main_helper.h
+index d12ea91..f071094 100644
+--- a/base-foc/src/platform/_main_helper.h
++++ b/base-foc/src/platform/_main_helper.h
+@@ -34,5 +34,9 @@ static void main_thread_bootstrap() {
+ 	Fiasco::l4_utcb_tcr()->user[Fiasco::UTCB_TCR_THREAD_OBJ] = 0;
+ }
+ 
++int genode_gettid()
++{
++       return -1;
++}
+ 
+ #endif /* _PLATFORM___MAIN_HELPER_H_ */
+diff --git a/base-linux/src/base/lock/lock_helper.h b/base-linux/src/base/lock/lock_helper.h
+index 7e414e7..8fec270 100644
+--- a/base-linux/src/base/lock/lock_helper.h
++++ b/base-linux/src/base/lock/lock_helper.h
+@@ -78,3 +78,8 @@ static inline void thread_stop_myself()
+ 	struct timespec ts = { 1000, 0 };
+ 	while (lx_nanosleep(&ts, 0) == 0);
+ }
++
++int genode_gettid()
++{
++	return lx_gettid();
++}
+diff --git a/base-nova/src/platform/_main_helper.h b/base-nova/src/platform/_main_helper.h
+index f65a984..b3c09ad 100644
+--- a/base-nova/src/platform/_main_helper.h
++++ b/base-nova/src/platform/_main_helper.h
+@@ -48,4 +48,9 @@ static void main_thread_bootstrap()
+ 		__first_free_cap_selector = FIRST_FREE_PORTAL;
+ }
+ 
++int genode_gettid()
++{
++       return -1;
++}
++
+ #endif /* _PLATFORM___MAIN_HELPER_H_ */
+diff --git a/base-okl4/src/platform/_main_helper.h b/base-okl4/src/platform/_main_helper.h
+index 7d3b830..d72d51c 100644
+--- a/base-okl4/src/platform/_main_helper.h
++++ b/base-okl4/src/platform/_main_helper.h
+@@ -47,4 +47,9 @@ static void main_thread_bootstrap()
+ 	Okl4::copy_uregister_to_utcb();
+ }
+ 
++int genode_gettid()
++{
++	return Okl4::L4_UserDefinedHandle();
++}
++
+ #endif /* _PLATFORM___MAIN_HELPER_H_ */
+diff --git a/base-pistachio/src/platform/_main_helper.h b/base-pistachio/src/platform/_main_helper.h
+index 6c977c4..88542f3 100644
+--- a/base-pistachio/src/platform/_main_helper.h
++++ b/base-pistachio/src/platform/_main_helper.h
+@@ -14,6 +14,10 @@
+ #ifndef _PLATFORM___MAIN_HELPER_H_
+ #define _PLATFORM___MAIN_HELPER_H_
+ 
++/* Pistachio includes */
++namespace Pistachio {
++#include <l4/ipc.h>
++}
+ 
+ /* Pistachio-specific definitions */
+ enum { L4_PAGEMASK = ~0xFFF };
+@@ -22,5 +26,9 @@ enum { L4_PAGESIZE = 0x1000 };
+ 
+ static void main_thread_bootstrap() { }
+ 
++int genode_gettid()
++{
++	return Pistachio::L4_Myself().raw;
++}
+ 
+ #endif /* _PLATFORM___MAIN_HELPER_H_ */
+diff --git a/base/src/base/console/log_console.cc b/base/src/base/console/log_console.cc
+index 377b795..6bb18ac 100644
+--- a/base/src/base/console/log_console.cc
++++ b/base/src/base/console/log_console.cc
+@@ -126,6 +126,7 @@ extern "C" int stdout_write(const char *s)
+ 	return stdout_log_console()->log_session()->write(s);
+ }
+ 
++extern int genode_gettid(void);
+ 
+ /**
+  * Hook for support the 'fork' implementation of the noux libc backend
+@@ -146,5 +147,8 @@ void Genode::printf(const char *format, ...)
+ 
+ void Genode::vprintf(const char *format, va_list list)
+ {
++	void *s;
++	stdout_log_console()->printf("[0x%8p/%d] ", &s, genode_gettid());
++
+ 	stdout_log_console()->vprintf(format, list);
+ }
