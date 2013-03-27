@@ -1,0 +1,320 @@
+qt_update.diff
+
+From: Christian Prochaska <christian.prochaska@genode-labs.com>
+
+
+---
+ configure                                  |   12 +-
+ mkspecs/genode-g++/qmake.conf              |   14 ++
+ mkspecs/genode-g++/qplatformdefs.h         |  159 ++++++++++++++++++++++++++++
+ mkspecs/qws/genode-x86-g++/qmake.conf      |   10 ++
+ mkspecs/qws/genode-x86-g++/qplatformdefs.h |   42 +++++++
+ src/corelib/global/qconfig-genode.h        |    1 
+ 6 files changed, 232 insertions(+), 6 deletions(-)
+ create mode 100644 mkspecs/genode-g++/qmake.conf
+ create mode 100644 mkspecs/genode-g++/qplatformdefs.h
+ create mode 100644 mkspecs/qws/genode-x86-g++/qmake.conf
+ create mode 100644 mkspecs/qws/genode-x86-g++/qplatformdefs.h
+ create mode 120000 src/corelib/global/qconfig-genode.h
+
+diff --git a/configure b/configure
+index e3d464b..259a128 100755
+--- a/configure
++++ b/configure
+@@ -793,14 +793,14 @@ CFG_WEBKIT=auto # (yes|no|auto|debug)
+ CFG_JAVASCRIPTCORE_JIT=auto
+ CFG_STACK_PROTECTOR_STRONG=auto
+ 
+-CFG_GFX_AVAILABLE="linuxfb transformed qvfb vnc multiscreen directfb"
++CFG_GFX_AVAILABLE="linuxfb transformed qvfb vnc multiscreen directfb nitpicker"
+ CFG_GFX_ON="linuxfb multiscreen"
+ CFG_GFX_PLUGIN_AVAILABLE=
+ CFG_GFX_PLUGIN=
+ CFG_GFX_OFF=
+-CFG_KBD_AVAILABLE="tty linuxinput qvfb"
++CFG_KBD_AVAILABLE="tty linuxinput qvfb nitpicker"
+ CFG_KBD_ON="tty"    #default, see QMakeVar above
+-CFG_MOUSE_AVAILABLE="pc linuxtp linuxinput tslib qvfb"
++CFG_MOUSE_AVAILABLE="pc linuxtp linuxinput tslib qvfb nitpicker"
+ CFG_MOUSE_ON="pc linuxtp"   #default, see QMakeVar above
+ 
+ if [ -f "$relpath/src/gui/embedded/qscreenqnx_qws.cpp" ]; then
+@@ -856,7 +856,7 @@ CFG_SSE4_1=auto
+ CFG_SSE4_2=auto
+ CFG_AVX=auto
+ CFG_REDUCE_RELOCATIONS=no
+-CFG_IPV6=auto
++CFG_IPV6=no
+ CFG_NAS=no
+ CFG_QWS_DEPTHS=all
+ CFG_USER_BUILD_KEY=
+@@ -869,10 +869,10 @@ CFG_ARMFPA=auto
+ CFG_IWMMXT=no
+ CFG_NEON=auto
+ CFG_CLOCK_GETTIME=auto
+-CFG_CLOCK_MONOTONIC=auto
++CFG_CLOCK_MONOTONIC=no
+ CFG_MREMAP=auto
+ CFG_GETADDRINFO=auto
+-CFG_IPV6IFNAME=auto
++CFG_IPV6IFNAME=no
+ CFG_GETIFADDRS=auto
+ CFG_INOTIFY=auto
+ CFG_RPATH=yes
+diff --git a/mkspecs/genode-g++/qmake.conf b/mkspecs/genode-g++/qmake.conf
+new file mode 100644
+index 0000000..fb18c3a
+--- /dev/null
++++ b/mkspecs/genode-g++/qmake.conf
+@@ -0,0 +1,14 @@
++#
++# qmake configuration for linux-g++
++#
++
++MAKEFILE_GENERATOR	= UNIX
++TEMPLATE		= app
++CONFIG			+= qt warn_on release incremental link_prl
++QT			+= core gui
++QMAKE_INCREMENTAL_STYLE = sublib
++
++include(../common/linux.conf)
++include(../common/gcc-base-unix.conf)
++include(../common/g++-unix.conf)
++load(qt_config)
+diff --git a/mkspecs/genode-g++/qplatformdefs.h b/mkspecs/genode-g++/qplatformdefs.h
+new file mode 100644
+index 0000000..7df1d8f
+--- /dev/null
++++ b/mkspecs/genode-g++/qplatformdefs.h
+@@ -0,0 +1,159 @@
++/****************************************************************************
++**
++** Copyright (C) 1992-2007 Trolltech ASA. All rights reserved.
++**
++** This file is part of the qmake spec of the Qt Toolkit.
++**
++** This file may be used under the terms of the GNU General Public
++** License version 2.0 as published by the Free Software Foundation
++** and appearing in the file LICENSE.GPL included in the packaging of
++** this file.  Please review the following information to ensure GNU
++** General Public Licensing requirements will be met:
++** http://trolltech.com/products/qt/licenses/licensing/opensource/
++**
++** If you are unsure which license is appropriate for your use, please
++** review the following information:
++** http://trolltech.com/products/qt/licenses/licensing/licensingoverview
++** or contact the sales department at sales@trolltech.com.
++**
++** In addition, as a special exception, Trolltech gives you certain
++** additional rights. These rights are described in the Trolltech GPL
++** Exception version 1.0, which can be found at
++** http://www.trolltech.com/products/qt/gplexception/ and in the file
++** GPL_EXCEPTION.txt in this package.
++**
++** In addition, as a special exception, Trolltech, as the sole copyright
++** holder for Qt Designer, grants users of the Qt/Eclipse Integration
++** plug-in the right for the Qt/Eclipse Integration to link to
++** functionality provided by Qt Designer and its related libraries.
++**
++** Trolltech reserves all rights not expressly granted herein.
++** 
++** Trolltech ASA (c) 2007
++**
++** This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
++** WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++**
++****************************************************************************/
++
++#ifndef QPLATFORMDEFS_H
++#define QPLATFORMDEFS_H
++
++// Get Qt defines/settings
++
++#include "qglobal.h"
++
++// Set any POSIX/XOPEN defines at the top of this file to turn on specific APIs
++
++// 1) need to reset default environment if _BSD_SOURCE is defined
++// 2) need to specify POSIX thread interfaces explicitly in glibc 2.0
++// 3) it seems older glibc need this to include the X/Open stuff
++#ifndef _GNU_SOURCE
++#  define _GNU_SOURCE
++#endif
++
++#include <unistd.h>
++
++
++// We are hot - unistd.h should have turned on the specific APIs we requested
++
++//#include <features.h>
++//#include <pthread.h>
++#include <dirent.h>
++#include <fcntl.h>
++#include <grp.h>
++#include <pwd.h>
++#include <signal.h>
++//#include <dlfcn.h>
++
++#include <sys/types.h>
++#include <sys/ioctl.h>
++//#include <sys/ipc.h>
++#include <sys/time.h>
++//#include <sys/shm.h>
++#include <sys/socket.h>
++#include <sys/stat.h>
++//#include <sys/wait.h>
++#include <netinet/in.h>
++#ifndef QT_NO_IPV6IFNAME
++#include <net/if.h>
++#endif
++
++#ifdef QT_LARGEFILE_SUPPORT
++#define QT_STATBUF              struct stat64
++#define QT_STATBUF4TSTAT        struct stat64
++#define QT_STAT                 ::stat64
++#define QT_FSTAT                ::fstat64
++#define QT_LSTAT                ::lstat64
++#define QT_OPEN                 ::open64
++#define QT_TRUNCATE             ::truncate64
++#define QT_FTRUNCATE            ::ftruncate64
++#define QT_LSEEK                ::lseek64
++#else
++#define QT_STATBUF              struct stat
++#define QT_STATBUF4TSTAT        struct stat
++#define QT_STAT                 ::stat
++#define QT_FSTAT                ::fstat
++#define QT_LSTAT                ::lstat
++#define QT_OPEN                 ::open
++#define QT_TRUNCATE             ::truncate
++#define QT_FTRUNCATE            ::ftruncate
++#define QT_LSEEK                ::lseek
++#endif
++
++#ifdef QT_LARGEFILE_SUPPORT
++#define QT_FOPEN                ::fopen64
++#define QT_FSEEK                ::fseeko64
++#define QT_FTELL                ::ftello64
++#define QT_FGETPOS              ::fgetpos64
++#define QT_FSETPOS              ::fsetpos64
++#define QT_MMAP                 ::mmap64
++#define QT_FPOS_T               fpos64_t
++#define QT_OFF_T                off64_t
++#else
++#define QT_FOPEN                ::fopen
++#define QT_FSEEK                ::fseek
++#define QT_FTELL                ::ftell
++#define QT_FGETPOS              ::fgetpos
++#define QT_FSETPOS              ::fsetpos
++#define QT_MMAP                 ::mmap
++#define QT_FPOS_T               fpos_t
++#define QT_OFF_T                long
++#endif
++
++#define QT_STAT_REG		S_IFREG
++#define QT_STAT_DIR		S_IFDIR
++#define QT_STAT_MASK		S_IFMT
++#define QT_STAT_LNK		S_IFLNK
++#define QT_SOCKET_CONNECT	::connect
++#define QT_SOCKET_BIND		::bind
++#define QT_FILENO		fileno
++#define QT_CLOSE		::close
++#define QT_READ			::read
++#define QT_WRITE		::write
++#define QT_ACCESS		::access
++#define QT_GETCWD		::getcwd
++#define QT_CHDIR		::chdir
++#define QT_MKDIR		::mkdir
++#define QT_RMDIR		::rmdir
++#define QT_OPEN_LARGEFILE       O_LARGEFILE
++#define QT_OPEN_RDONLY		O_RDONLY
++#define QT_OPEN_WRONLY		O_WRONLY
++#define QT_OPEN_RDWR		O_RDWR
++#define QT_OPEN_CREAT		O_CREAT
++#define QT_OPEN_TRUNC		O_TRUNC
++#define QT_OPEN_APPEND		O_APPEND
++
++#define QT_SIGNAL_RETTYPE	void
++#define QT_SIGNAL_ARGS		int
++#define QT_SIGNAL_IGNORE	SIG_IGN
++
++#define QT_SOCKLEN_T		socklen_t
++
++#if defined(_XOPEN_SOURCE) && (_XOPEN_SOURCE >= 500)
++#define QT_SNPRINTF		::snprintf
++#define QT_VSNPRINTF		::vsnprintf
++#endif
++
++
++#endif // QPLATFORMDEFS_H
+diff --git a/mkspecs/qws/genode-x86-g++/qmake.conf b/mkspecs/qws/genode-x86-g++/qmake.conf
+new file mode 100644
+index 0000000..55011ec
+--- /dev/null
++++ b/mkspecs/qws/genode-x86-g++/qmake.conf
+@@ -0,0 +1,10 @@
++#
++# qmake configuration for building with linux-g++
++#
++
++include(../../common/linux.conf)
++include(../../common/gcc-base-unix.conf)
++include(../../common/g++-unix.conf)
++include(../../common/qws.conf)
++
++load(qt_config)
+diff --git a/mkspecs/qws/genode-x86-g++/qplatformdefs.h b/mkspecs/qws/genode-x86-g++/qplatformdefs.h
+new file mode 100644
+index 0000000..c21e956
+--- /dev/null
++++ b/mkspecs/qws/genode-x86-g++/qplatformdefs.h
+@@ -0,0 +1,42 @@
++/****************************************************************************
++**
++** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
++** All rights reserved.
++** Contact: Nokia Corporation (qt-info@nokia.com)
++**
++** This file is part of the qmake spec of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial Usage
++** Licensees holding valid Qt Commercial licenses may use this file in
++** accordance with the Qt Commercial License Agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and Nokia.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 2.1 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPL included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU Lesser General Public License version 2.1 requirements
++** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
++**
++** In addition, as a special exception, Nokia gives you certain additional
++** rights.  These rights are described in the Nokia Qt LGPL Exception
++** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 3.0 as published by the Free Software
++** Foundation and appearing in the file LICENSE.GPL included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU General Public License version 3.0 requirements will be
++** met: http://www.gnu.org/copyleft/gpl.html.
++**
++** If you have questions regarding the use of this file, please contact
++** Nokia at qt-info@nokia.com.
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++#include "../../genode-g++/qplatformdefs.h"
+diff --git a/src/corelib/global/qconfig-genode.h b/src/corelib/global/qconfig-genode.h
+new file mode 120000
+index 0000000..5309d22
+--- /dev/null
++++ b/src/corelib/global/qconfig-genode.h
+@@ -0,0 +1 @@
++../../../../../include/qt4/QtCore/qconfig-genode.h
+\ No newline at end of file
