@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# usage: generate_statistics <ELF image> <file containing the sampled addresses> [<file containing the shared library load addresses>]
+
+cat $3 $2 | ./backtrace $1 | sed -e '/Scanned image/d' | sort | uniq --count | sort -rn > statistics_by_function.txt
+echo "statistics_by_function.txt generated"
+
+cat $2 | sort | uniq --count | sort -rn | cat $3 - | ./backtrace $1 | sed -e '/Scanned image/d' > statistics_by_address.txt
+echo "statistics_by_address.txt generated"
