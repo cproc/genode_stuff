@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# usage: generate_statistics <ELF image> <file containing the Genode log output>
+
+grep '\[.*\]   0x.* \.\. 0x.*: .*\.lib\.so' $2 | sed -e 's/\x1b.*$//' > ldso_addresses.txt
+grep '\[init -> cpu_sampler -> samples ->' $2 | sed -e 's/^\[.*\] //' -e 's/\x1b\[0m.*$//' > sampled_addresses.txt
+
+cat ldso_addresses.txt sampled_addresses.txt | ./backtrace $1 | sed -e '/Scanned image/d' | sort | uniq --count | sort -rn > statistics_by_function.txt
+echo "statistics_by_function.txt generated"
+
+cat sampled_addresses.txt | sort | uniq --count | sort -rn | cat ldso_addresses.txt - | ./backtrace $1 | sed -e '/Scanned image/d' > statistics_by_address.txt
+echo "statistics_by_address.txt generated"

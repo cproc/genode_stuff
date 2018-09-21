@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# usage: filter_ldso_addresses_from_log <file containing the Genode log output>
+
+grep '\[.*\]   0x.* \.\. 0x.*: .*\.lib\.so' $1 | sed -e 's/\x1b.*$//' > ldso_addresses.txt

@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# usage: filter_sampled_addresses_from_log <file containing the Genode log output>
+
+grep '\[init -> cpu_sampler -> samples ->' $1 | sed -e 's/^\[.*\] //' -e 's/\x1b\[0m.*$//' > sampled_addresses.txt
