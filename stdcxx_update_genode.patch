@@ -5,35 +5,27 @@ From: Christian Prochaska <christian.prochaska@genode-labs.com>
 This patch is needed to generate the 'c++config.h' file when updating the
 stdcxx library. See 'repos/libports/include/stdcxx/README for more details'.
 ---
- repos/ports/ports/gcc.hash                         |    2 -
  repos/ports/src/noux-pkg/gcc/patches/series        |    1 
- .../src/noux-pkg/gcc/patches/stdcxx_update.patch   |   80 ++++++++++++++++++++
- repos/ports/src/noux-pkg/gcc/target.inc            |    3 +
- 4 files changed, 84 insertions(+), 2 deletions(-)
+ .../src/noux-pkg/gcc/patches/stdcxx_update.patch   |   66 ++++++++++++++++++++
+ repos/ports/src/noux-pkg/gcc/target.inc            |    4 +
+ 3 files changed, 70 insertions(+), 1 deletion(-)
  create mode 100644 repos/ports/src/noux-pkg/gcc/patches/stdcxx_update.patch
 
-diff --git a/repos/ports/ports/gcc.hash b/repos/ports/ports/gcc.hash
-index 21ceee8..56fca2d 100644
---- a/repos/ports/ports/gcc.hash
-+++ b/repos/ports/ports/gcc.hash
-@@ -1 +1 @@
--092a36c078b00211af4dc29f1fbfcabfde8e8614
-+2bc2b94894a9c25ef658c98382616770b5044a78
 diff --git a/repos/ports/src/noux-pkg/gcc/patches/series b/repos/ports/src/noux-pkg/gcc/patches/series
-index a90be6f..07b36e0 100644
+index c2e3c2294e..3349fc80f7 100644
 --- a/repos/ports/src/noux-pkg/gcc/patches/series
 +++ b/repos/ports/src/noux-pkg/gcc/patches/series
-@@ -10,3 +10,4 @@ go_libbacktrace.patch
- target_libbacktrace.patch
- noux_build.patch
- arm.patch
+@@ -17,3 +17,4 @@ emutls.patch
+ frame_pointer.patch
+ gcov.patch
+ libcody.patch
 +stdcxx_update.patch
 diff --git a/repos/ports/src/noux-pkg/gcc/patches/stdcxx_update.patch b/repos/ports/src/noux-pkg/gcc/patches/stdcxx_update.patch
 new file mode 100644
-index 0000000..254e72a
+index 0000000000..87efb374b4
 --- /dev/null
 +++ b/repos/ports/src/noux-pkg/gcc/patches/stdcxx_update.patch
-@@ -0,0 +1,80 @@
+@@ -0,0 +1,66 @@
 +stdcxx_update.patch
 +
 +From: Christian Prochaska <christian.prochaska@genode-labs.com>
@@ -43,14 +35,13 @@ index 0000000..254e72a
 + Makefile.tpl              |    1 +
 + configure.ac              |    2 ++
 + libstdc++-v3/acinclude.m4 |   16 ++++++++--------
-+ libstdc++-v3/configure.ac |    2 +-
-+ 4 files changed, 12 insertions(+), 9 deletions(-)
++ 3 files changed, 11 insertions(+), 8 deletions(-)
 +
 +diff --git a/Makefile.tpl b/Makefile.tpl
-+index a89f815..c326e87 100644
++index 66c012371..e54fad65d 100644
 +--- a/Makefile.tpl
 ++++ b/Makefile.tpl
-+@@ -506,6 +506,7 @@ COMPILER_AS_FOR_TARGET=@COMPILER_AS_FOR_TARGET@
++@@ -609,6 +609,7 @@ COMPILER_AS_FOR_TARGET=@COMPILER_AS_FOR_TARGET@
 + COMPILER_LD_FOR_TARGET=@COMPILER_LD_FOR_TARGET@
 + COMPILER_NM_FOR_TARGET=@COMPILER_NM_FOR_TARGET@
 + 
@@ -59,10 +50,10 @@ index 0000000..254e72a
 + CXXFLAGS_FOR_TARGET = @CXXFLAGS_FOR_TARGET@
 + 
 +diff --git a/configure.ac b/configure.ac
-+index dbfaf4d..5a2d3a4 100644
++index e1a0a797b..36ae1e320 100644
 +--- a/configure.ac
 ++++ b/configure.ac
-+@@ -2380,6 +2380,8 @@ AC_ARG_WITH([debug-prefix-map],
++@@ -2538,6 +2538,8 @@ AC_ARG_WITH([debug-prefix-map],
 +   [DEBUG_PREFIX_CFLAGS_FOR_TARGET=])
 + AC_SUBST(DEBUG_PREFIX_CFLAGS_FOR_TARGET)
 + 
@@ -72,10 +63,10 @@ index 0000000..254e72a
 + # might be empty or "-g".  We don't require a C++ compiler, so CXXFLAGS
 + # might also be empty (or "-g", if a non-GCC C++ compiler is in the path).
 +diff --git a/libstdc++-v3/acinclude.m4 b/libstdc++-v3/acinclude.m4
-+index ce44a6a..2373dd5 100644
++index e3cc3a8e8..ed9b41d1b 100644
 +--- a/libstdc++-v3/acinclude.m4
 ++++ b/libstdc++-v3/acinclude.m4
-+@@ -1136,17 +1136,17 @@ AC_DEFUN([GLIBCXX_ENABLE_C99], [
++@@ -1063,17 +1063,17 @@ AC_DEFUN([GLIBCXX_ENABLE_C99], [
 +     fi
 + 
 +     # Option parsed, now set things appropriately.
@@ -101,37 +92,30 @@ index 0000000..254e72a
 + 
 +     gcc_no_link="$ac_save_gcc_no_link"
 +     LIBS="$ac_save_LIBS"
-+diff --git a/libstdc++-v3/configure.ac b/libstdc++-v3/configure.ac
-+index 088f5e1..b8addaf 100644
-+--- a/libstdc++-v3/configure.ac
-++++ b/libstdc++-v3/configure.ac
-+@@ -209,7 +209,7 @@ AC_CHECK_HEADERS(fenv.h complex.h)
-+ GLIBCXX_CHECK_C99_TR1
-+ 
-+ # For the EOF, SEEK_CUR, and SEEK_END integer constants.
-+-#GLIBCXX_COMPUTE_STDIO_INTEGER_CONSTANTS
-++GLIBCXX_COMPUTE_STDIO_INTEGER_CONSTANTS
-+ 
-+ # For gettimeofday support.
-+ GLIBCXX_CHECK_GETTIMEOFDAY
 diff --git a/repos/ports/src/noux-pkg/gcc/target.inc b/repos/ports/src/noux-pkg/gcc/target.inc
-index 8ba3251..b388d45 100644
+index db827437e2..4bd904e95a 100644
 --- a/repos/ports/src/noux-pkg/gcc/target.inc
 +++ b/repos/ports/src/noux-pkg/gcc/target.inc
-@@ -14,7 +14,6 @@ CONFIGURE_ARGS = --program-prefix=$(PROGRAM_PREFIX) \
+@@ -11,12 +11,12 @@ CONFIGURE_ARGS = --program-prefix=$(PROGRAM_PREFIX) \
+                  --disable-libquadmath \
+                  --disable-libffi \
+                  --disable-libada \
++                 --disable-gcov \
+                  --enable-targets=all \
+                  --with-gnu-as \
                   --with-gnu-ld \
                   --disable-tls \
                   --disable-threads \
 -                 --disable-hosted-libstdcxx \
+                  --disable-c++-tools \
                   --enable-shared \
                   --enable-multiarch \
-                  --disable-sjlj-exceptions
-@@ -28,6 +27,8 @@ ENV += CC_FOR_TARGET=$(CC) CXX_FOR_TARGET=$(CXX) GCC_FOR_TARGET=$(CC) CPP_FOR_TA
+@@ -32,6 +32,8 @@ MKENV += CC_FOR_TARGET=$(CC) CXX_FOR_TARGET=$(CXX) GCC_FOR_TARGET=$(CC) CPP_FOR_
  # libgcc does not evaluate CPPFLAGS_FOR_TARGET, so everything is put into CFLAGS_FOR_TARGET here
- ENV += CFLAGS_FOR_TARGET='-I$(BASE_DIR)/../../tool -DUSE_PT_GNU_EH_FRAME -Dinhibit_libc -fPIC'
+ MKENV += CFLAGS_FOR_TARGET='-I$(BASE_DIR)/../../tool -DUSE_PT_GNU_EH_FRAME -Dinhibit_libc -fPIC'
  
-+ENV += CPPFLAGS_FOR_TARGET='$(CPPFLAGS)'
++MKENV += CPPFLAGS_FOR_TARGET='$(CPPFLAGS)'
 +
  # libsupc++
- ENV += CXXFLAGS_FOR_TARGET='-fPIC'
+ MKENV += CXXFLAGS_FOR_TARGET='-fPIC'
  
